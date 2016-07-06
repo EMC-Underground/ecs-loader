@@ -94,7 +94,7 @@ function getCustomerList(source, callback) {
 			}
 			
 			// free up memory
-			data = null; // 
+			data = null; 
 			dataPayload = null;
 			
 			callback(null, GDUNS)  // this is the callback saying getCustomerList function is complete
