@@ -6,7 +6,8 @@
   "dependencies": {
     "async": "^1.5.2",
     "request": "^2.72.0",
-    "aws-sdk": "^2.3.17"
+    "aws-sdk": "^2.3.17", 
+	"sleep": "^3.0.1"
   },
   "devDependencies": {},
   "scripts": {

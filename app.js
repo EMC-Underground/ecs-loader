@@ -23,6 +23,7 @@ The objects can then be queried by middle tier apps like munger1 to ultimately r
 var AWS = require( "aws-sdk" ), // use the generic AWS SDK for s3 API
 	ECS = require( "aws-sdk" ), // use a specific config for pointing to ECS
 	request = require( "request" ), // use the request library to make http call to ops-console API
+	sleep = require('sleep'),
 	async = require( "async" ); // use the async library to structure sequencing of load and store logic
 		
 // setup ECS config to point to Bellevue lab 
@@ -64,10 +65,9 @@ function cycleThru() {
         },		
     ], function(err) {		
 		//restart the whole cycle again from the top after wait time
-		setTimeout(function() {
-			cycleThru();
-		}, 86400000); // 86400000 = loop through 1 every 24 hours			
-    });
+		console.log('now waiting 24 hrs before re-loading IB data');
+		sleep.sleep(86400); // wait 24 hrs		
+    };
 }
 
 // This function gets the master list of customer GDUNs from the ECS repo.
@@ -103,7 +103,7 @@ function getCustomerList(source, callback) {
 		
 // This function iterates through all of the customer GDUNs, pulling the install base data from ops-console
 // for each GDUN, and then storing the result in JSON format in ECS.	
-function processGDUN(product, GDUNlist, callback) {
+function processGDUN(GDUNlist, callback) {
 	async.forEach(GDUNlist, function(gdun, callback) {
 		var jsonBodyToStore;
 
@@ -130,12 +130,11 @@ function processGDUN(product, GDUNlist, callback) {
 		], function(err) { // this function gets called after the two tasks have called their "task callbacks"
 			if (err) {
 				callback(err); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach but with error
-			} else {								
+			} else {			
 				// wait 5 seconds before callback to space out ops-console API calls and not overload source
-				setTimeout(function() {
-					console.log('waited 5 seconds...');
-					callback(); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach
-				}, 5000); 																	 				
+				console.log ('waiting for 5 seconds to space out ops-console API calls');
+				sleep.sleep(5) // sleep for 5 seconds
+				callback()				
 			}
 		});						
 	
@@ -147,10 +146,12 @@ function processGDUN(product, GDUNlist, callback) {
 
 // This function pulls the install base data for a given GDUN from ops-console
 // and then provides the resulting json body in a callback to the calling function.
-function getIBjson(gdun, callback) {				
+function getIBjson(gdun, callback) {	
+
+	var nineDigitGdun = appendZeros(gduns);
 
 	// build the URL for the API call 
-	var url = "http://pnwreport.bellevuelab.isus.emc.com/api/installs/" + gdun;	
+	var url = "http://pnwreport.bellevuelab.isus.emc.com/api/installs/" + nineDigitGdun;	
 
 	// pull the results from the API call
 	request(url, function (error, response, body) {
@@ -169,8 +170,7 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 	var params = {
 		Bucket: 'pacnwinstalls',
 		Key: gdun + '.json',
-		Body: JSON.stringify(jsonBodyToStore),
-		ContentType: 'json'
+		Body: JSON.stringify(jsonBodyToStore)
 	};	  
 	  
 	ecs.putObject(params, function(err, data) {
@@ -185,4 +185,18 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 			callback(null, eTag); // this is the  callback saying this storeIBjson function is complete			
 		};
 	});
+}
+
+// This function appends zeros to the beginning of GDUN numbers in case they are less than 9 characters and missing leading zeros
+function appendZeros(gdun) {
+	var realGdun;
+	if (gdun.length == 9) {
+		realGdun = gdun;
+	} else if (gdun.length == 8) {
+		realGdun = '0' + gdun;
+	} else if (gdun.length == 7) {
+		realGdun = '00' + gdun;
+	}
+	
+	return realGdun;
 }
