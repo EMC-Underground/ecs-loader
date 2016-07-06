@@ -130,8 +130,12 @@ function processGDUN(product, GDUNlist, callback) {
 		], function(err) { // this function gets called after the two tasks have called their "task callbacks"
 			if (err) {
 				callback(err); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach but with error
-			} else {
-				callback(); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach 				
+			} else {								
+				// wait 5 seconds before callback to space out ops-console API calls and not overload source
+				setTimeout(function() {
+					console.log('waited 5 seconds...');
+					callback(); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach
+				}, 5000); 																	 				
 			}
 		});						
 	
