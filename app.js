@@ -23,7 +23,7 @@ The objects can then be queried by middle tier apps like munger1 to ultimately r
 var AWS = require( "aws-sdk" ), // use the generic AWS SDK for s3 API
 	ECS = require( "aws-sdk" ), // use a specific config for pointing to ECS
 	request = require( "request" ), // use the request library to make http call to ops-console API
-	sleep = require('sleep'),
+	sleep = require('sleep'), // use the sleep library to pause execution as necessary
 	async = require( "async" ); // use the async library to structure sequencing of load and store logic
 		
 // setup ECS config to point to Bellevue lab 
@@ -66,8 +66,9 @@ function cycleThru() {
     ], function(err) {		
 		//restart the whole cycle again from the top after wait time
 		console.log('now waiting 24 hrs before re-loading IB data');
-		sleep.sleep(86400); // wait 24 hrs		
-    };
+		sleep.sleep(86400); // wait 24 hrs	
+		cycleThru();	
+    });
 }
 
 // This function gets the master list of customer GDUNs from the ECS repo.
@@ -133,7 +134,7 @@ function processGDUN(GDUNlist, callback) {
 			} else {			
 				// wait 5 seconds before callback to space out ops-console API calls and not overload source
 				console.log ('waiting for 5 seconds to space out ops-console API calls');
-				sleep.sleep(5) // sleep for 5 seconds
+				//sleep.sleep(5) // sleep for 5 seconds <--- NOT WORKING RIGHT NOW, BREAKS THE ASYNC FLOW
 				callback()				
 			}
 		});						
@@ -148,7 +149,7 @@ function processGDUN(GDUNlist, callback) {
 // and then provides the resulting json body in a callback to the calling function.
 function getIBjson(gdun, callback) {	
 
-	var nineDigitGdun = appendZeros(gduns);
+	var nineDigitGdun = appendZeros(gdun);
 
 	// build the URL for the API call 
 	var url = "http://pnwreport.bellevuelab.isus.emc.com/api/installs/" + nineDigitGdun;	
@@ -189,14 +190,16 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 
 // This function appends zeros to the beginning of GDUN numbers in case they are less than 9 characters and missing leading zeros
 function appendZeros(gdun) {
+	var gdunString = gdun.toString();
 	var realGdun;
-	if (gdun.length == 9) {
-		realGdun = gdun;
-	} else if (gdun.length == 8) {
-		realGdun = '0' + gdun;
-	} else if (gdun.length == 7) {
-		realGdun = '00' + gdun;
+
+	if (gdunString.length == 9) {
+		realGdun = gdunString;
+	} else if (gdunString.length == 8) {
+		realGdun = '0' + gdunString;
+	} else if (gdunString.length == 7) {
+		realGdun = '00' + gdunString;
 	}
-	
+
 	return realGdun;
 }
