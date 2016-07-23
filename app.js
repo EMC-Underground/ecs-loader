@@ -179,8 +179,7 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 			
 			try {
 				var parsedBodyToStore = JSON.parse(jsonBodyToStore);
-				var customer = parsedBodyToStore.rows[0].CS_CUSTOMER_NAME;					
-				}												
+				var customer = parsedBodyToStore.rows[0].CS_CUSTOMER_NAME;																	
 			} catch (e) {
 				var customer = 'not able to retrieve';
 			}		
