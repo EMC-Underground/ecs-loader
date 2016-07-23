@@ -176,8 +176,15 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 			console.log('Error in ECS putObject: ' + err, err.stack); 
 		} else {
 			// successful response
-			var parsedBodyToStore = JSON.parse(jsonBodyToStore);
-			var customer = parsedBodyToStore.rows[0].CS_CUSTOMER_NAME;
+			
+			try {
+				var parsedBodyToStore = JSON.parse(jsonBodyToStore);
+				var customer = parsedBodyToStore.rows[0].CS_CUSTOMER_NAME;					
+				}												
+			} catch (e) {
+				var customer = 'not able to retrieve';
+			}		
+	
 			console.log(gdun + '.json object saved to ECS for customer: ' + customer);
 			jsonBodyToStore = null; // free up memory
 			callback(null, customer); // this is the  callback saying this storeIBjson function is complete			
