@@ -122,7 +122,7 @@ function processGDUN(GDUNlist, callback) {
 			},
 			// Store the resulting insight in ECS
 			function(callback) {
-				storeIBjson(gdun, jsonBodyToStore, function(err, eTag) {
+				storeIBjson(gdun, jsonBodyToStore, function(err, customerStored) {
 					if (err) return callback(err); // task callback saying this function is complete but with an error, return prevents double callback
 					callback(); // this is the task callback saying this function is complete;
 				});
@@ -176,10 +176,11 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 			console.log('Error in ECS putObject: ' + err, err.stack); 
 		} else {
 			// successful response
-			parsedBodyToStore = JSON.parse(jsonBodyToStore);
-			console.log(gdun + '.json object saved to ECS for customer: parsedBodyToStore.rows[0].CS_CUSTOMER_NAME );
+			var parsedBodyToStore = JSON.parse(jsonBodyToStore);
+			var customer = parsedBodyToStore.rows[0].CS_CUSTOMER_NAME;
+			console.log(gdun + '.json object saved to ECS for customer: ' + customer);
 			jsonBodyToStore = null; // free up memory
-			callback(null, eTag); // this is the  callback saying this storeIBjson function is complete			
+			callback(null, customer); // this is the  callback saying this storeIBjson function is complete			
 		};
 	});
 }
