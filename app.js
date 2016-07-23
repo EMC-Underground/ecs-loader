@@ -23,7 +23,6 @@ The objects can then be queried by middle tier apps like munger1 to ultimately r
 var AWS = require( "aws-sdk" ), // use the generic AWS SDK for s3 API
 	ECS = require( "aws-sdk" ), // use a specific config for pointing to ECS
 	request = require( "request" ), // use the request library to make http call to ops-console API
-	sleep = require('sleep'), // use the sleep library to pause execution as necessary
 	async = require( "async" ); // use the async library to structure sequencing of load and store logic
 		
 // setup ECS config to point to Bellevue lab 
@@ -53,7 +52,7 @@ function cycleThru() {
             });
         },
 		
-        // get install base data for each product family and from each gdun, extract insight, and post to s3
+        // get install base data for each GDUN and post to ECS
         function(callback) {
             processGDUN(GDUNarray, function(err) {             
 				if (err) {
@@ -65,9 +64,9 @@ function cycleThru() {
         },		
     ], function(err) {		
 		//restart the whole cycle again from the top after wait time
-		console.log('now waiting 24 hrs before re-loading IB data');
-		sleep.sleep(86400); // wait 24 hrs	
-		cycleThru();	
+		setTimeout(function() {
+			cycleThru();
+		}, 86400000); // 86400000 = loop through 1 every 24 hours	
     });
 }
 
@@ -85,7 +84,7 @@ function getCustomerList(source, callback) {
 		if (err) {
 			callback(err, null); // this is the callback saying getCustomerList function is complete but with an error
 		} else { // success					
-			//console.log(data.Body.toString()); // note: Body is outputted as type buffer which is an array of bytes of the body, hence toString() 
+			console.log(data.Body.toString()); // note: Body is outputted as type buffer which is an array of bytes of the body, hence toString() 
 			var dataPayload = JSON.parse(data.Body);
 			
 			// load GDUNS array
@@ -105,7 +104,7 @@ function getCustomerList(source, callback) {
 // This function iterates through all of the customer GDUNs, pulling the install base data from ops-console
 // for each GDUN, and then storing the result in JSON format in ECS.	
 function processGDUN(GDUNlist, callback) {
-	async.forEach(GDUNlist, function(gdun, callback) {
+	async.forEachSeries(GDUNlist, function(gdun, callback) {
 		var jsonBodyToStore;
 
 		async.series([
@@ -127,14 +126,11 @@ function processGDUN(GDUNlist, callback) {
 					if (err) return callback(err); // task callback saying this function is complete but with an error, return prevents double callback
 					callback(); // this is the task callback saying this function is complete;
 				});
-			},
+			}
 		], function(err) { // this function gets called after the two tasks have called their "task callbacks"
 			if (err) {
 				callback(err); // this is the callback saying this run-thru of the series is complete for a given gdun in the async.forEach but with error
 			} else {			
-				// wait 5 seconds before callback to space out ops-console API calls and not overload source
-				console.log ('waiting for 5 seconds to space out ops-console API calls');
-				//sleep.sleep(5) // sleep for 5 seconds <--- NOT WORKING RIGHT NOW, BREAKS THE ASYNC FLOW
 				callback()				
 			}
 		});						
