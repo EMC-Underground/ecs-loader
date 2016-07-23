@@ -176,8 +176,8 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 			console.log('Error in ECS putObject: ' + err, err.stack); 
 		} else {
 			// successful response
-			var eTag = JSON.parse(data.ETag);
-			console.log('data saved to ECS object ETag: ' + JSON.parse(data.ETag) );
+			parsedBodyToStore = JSON.parse(jsonBodyToStore);
+			console.log(gdun + '.json object saved to ECS for customer: parsedBodyToStore.rows[0].CS_CUSTOMER_NAME );
 			jsonBodyToStore = null; // free up memory
 			callback(null, eTag); // this is the  callback saying this storeIBjson function is complete			
 		};
