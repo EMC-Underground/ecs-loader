@@ -1,0 +1,18 @@
+{
+  "comment": [
+    "To run locally, copy this file to `local-vcap.json` (listed in .gitignore/.cfignore)",
+    "and replace the angle-bracketed (<>) strings with actual values"
+  ],
+
+  "services": {
+    "ecs-creds-service": [
+      {
+        "name": "ecs-creds-service",
+        "credentials": {
+          "accessKeyId": "<put access key ID here>",
+          "secretAccessKey": "<put secret key here>"
+        }
+      }
+    ]
+  }
+}

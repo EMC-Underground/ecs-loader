@@ -23,17 +23,36 @@ The objects can then be queried by middle tier apps like munger1 to ultimately r
 var AWS = require( "aws-sdk" ), // use the generic AWS SDK for s3 API
 	ECS = require( "aws-sdk" ), // use a specific config for pointing to ECS
 	request = require( "request" ), // use the request library to make http call to ops-console API
-	async = require( "async" ); // use the async library to structure sequencing of load and store logic
-		
+	async = require( "async" ), // use the async library to structure sequencing of load and store logic
+	cfenv = require("cfenv")
+
+// try and set the vcap from a local file, if it fails, appEnv will be set to use
+// the PCF user provided service specified with the getServiceCreds call
+var localVCAP  = null	
+try {
+	localVCAP = require("./local-vcap.json")
+	} catch(e) {}
+
+var appEnv = cfenv.getAppEnv({vcap: localVCAP}) // vcap specification is ignored if not running locally
+var creds  = appEnv.getServiceCreds('ecs-creds-service') || {}
+	
 // setup ECS config to point to Bellevue lab 
 var ECSconfig = {
   s3ForcePathStyle: true,
-  endpoint: new AWS.Endpoint('http://10.4.44.125:9020')
+  endpoint: new AWS.Endpoint('http://10.4.44.125:9020'),
+  accessKeyId: creds.accessKeyId,
+  secretAccessKey: creds.secretAccessKey
 };
-ECS.config.loadFromPath(__dirname + '/ECSconfig.json');
+
+console.log('ECSconfig = ' + JSON.stringify(ECSconfig) );
+
+// Trying vcap instead of below to get credentials
+// ECS.config.loadFromPath(__dirname + '/ECSconfig.json');
 var ecs = new ECS.S3(ECSconfig);
+console.log(ecs);
 
 // launch the ecs-loader process
+console.log('starting cycleThru')
 cycleThru();
 
 // This is the master function that calls the 2 supporting functions in series to
@@ -73,6 +92,7 @@ function cycleThru() {
 // This function gets the master list of customer GDUNs from the ECS repo.
 // It returns that list as the 'GDUNS' array.
 function getCustomerList(source, callback) {
+	console.log('entering getCustomerList function')
 	// get json data object from ECS bucket	
 	var GDUNS = [];
 	var params = {
