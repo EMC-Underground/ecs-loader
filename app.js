@@ -39,7 +39,7 @@ var creds  = appEnv.getServiceCreds('ecs-creds-service') || {}
 // setup ECS config to point to Bellevue lab 
 var ECSconfig = {
   s3ForcePathStyle: true,
-  endpoint: new AWS.Endpoint('http://10.4.44.125:9020'),
+  endpoint: new AWS.Endpoint('http://10.5.208.212:9020'), // store to node 1 of 4 node cluster
   accessKeyId: creds.accessKeyId,
   secretAccessKey: creds.secretAccessKey
 };
@@ -80,12 +80,20 @@ function cycleThru() {
 					callback(); // this is the callback saying this function is complete
 				}			
             });
-        },		
-    ], function(err) {		
+        }
+    ], function(err) {	
+		if (err) {
+			console.log('Full cycle likely not complete, error: ' + err);
+		} else {
+			console.log('Full cycle completed successfully');
+		}
+		var datetime = new Date();
+		console.log('Cycle ended on: ' + datetime);	
+		console.log('now waiting 24 hrs before starting cycle again...');
 		//restart the whole cycle again from the top after wait time
 		setTimeout(function() {
 			cycleThru();
-		}, 86400000); // 86400000 = loop through 1 every 24 hours	
+		}, 86400000); // 86400000 = loop through 1 every 24 hours			
     });
 }
 
@@ -96,7 +104,7 @@ function getCustomerList(source, callback) {
 	// get json data object from ECS bucket	
 	var GDUNS = [];
 	var params = {
-			Bucket: 'pacnwinstalls',
+			Bucket: 'installBase',
 			Key: source
 	};  
 	  
@@ -185,7 +193,7 @@ function storeIBjson(gdun, jsonBodyToStore, callback) {
 
 	// put the data in the ECS bucket
 	var params = {
-		Bucket: 'pacnwinstalls',
+		Bucket: 'installBase',
 		Key: gdun + '.json',
 		Body: JSON.stringify(jsonBodyToStore)
 	};	  
